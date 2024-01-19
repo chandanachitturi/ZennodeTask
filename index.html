@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Zennode Shopping Cart</title>
+</head>
+<body>
+
+  <div id="output"></div>
+
+  <script>
+    const catalog = {
+      "Product A": 20,
+      "Product B": 40,
+      "Product C": 50,
+    };
+
+    const discountRules = {
+      flat_10_discount: 10,
+      bulk_5_discount: 5,
+      bulk_10_discount: 10,
+      tiered_50_discount: 50,
+    };
+
+    const giftWrapFee = 1;
+    const shippingFeePerPackage = 5;
+    const itemsPerPackage = 10;
+
+    function calculateDiscount(cart, discountRules) {
+      let applicableDiscounts = Object.entries(discountRules)
+        .filter(([rule, discount]) => {
+          switch (rule) {
+            case "flat_10_discount":
+              return cart.total > 200;
+            case "bulk_5_discount":
+              return cart.quantity > 10;
+            case "bulk_10_discount":
+              return cart.totalQuantity > 20;
+            case "tiered_50_discount":
+              return cart.totalQuantity > 30 && cart.quantity > 15;
+            default:
+              return false;
+          }
+        })
+        .map(([rule, discount]) => discount);
+
+      return applicableDiscounts.length > 0 ? Math.max(...applicableDiscounts) : 0;
+    }
+
+    function calculateTotal(cart, discount, shippingFee, giftWrapFee) {
+      let discountedTotal = cart.total - (cart.total * discount) / 100;
+      if (isNaN(discountedTotal)) {
+        console.error("Error: Discounted total is not a number.");
+        return NaN;
+      }
+
+      let totalShippingFee = Math.ceil(cart.totalQuantity / itemsPerPackage) * shippingFee;
+      if (isNaN(totalShippingFee)) {
+        console.error("Error: Shipping fee is not a number.");
+        return NaN;
+      }
+
+      let totalGiftWrapFee = cart.totalQuantity * giftWrapFee;
+      if (isNaN(totalGiftWrapFee)) {
+        console.error("Error: Gift wrap fee is not a number.");
+        return NaN;
+      }
+
+      return discountedTotal + totalShippingFee + totalGiftWrapFee;
+    }
+
+    function updateOutput(html) {
+      document.getElementById('output').innerHTML += html + '<br>';
+    }
+
+    function main() {
+      let cart = {
+        total: 0,
+        totalQuantity: 0,
+      };
+
+      for (const [product, price] of Object.entries(catalog)) {
+        const quantity = parseInt(prompt(`Enter the quantity of ${product}:`), 10);
+        const isGiftWrapped = confirm(`Is ${product} gift-wrapped?`);
+
+        const totalAmount = quantity * price;
+        const discount = calculateDiscount({ total: cart.total, quantity, totalQuantity: cart.totalQuantity }, discountRules);
+
+        cart.total += totalAmount;
+        cart.totalQuantity += quantity;
+
+        updateOutput(`${product}: Quantity: ${quantity}, Total Amount: $${totalAmount.toFixed(2)}`);
+      }
+
+      const discountAmount = calculateDiscount(cart, discountRules);
+      const shippingFee = Math.ceil(cart.totalQuantity / itemsPerPackage) * shippingFeePerPackage;
+      const totalAmount = calculateTotal(cart, discountAmount, shippingFee, giftWrapFee);
+
+      updateOutput(`Subtotal: $${cart.total.toFixed(2)}`);
+      updateOutput(`Discount Applied: ${discountAmount}% (${Object.keys(discountRules).find((key) => discountRules[key] === discountAmount)})`);
+      updateOutput(`Shipping Fee: $${shippingFee.toFixed(2)}`);
+      updateOutput(`Gift Wrap Fee: $${(cart.totalQuantity * giftWrapFee).toFixed(2)}`);
+      updateOutput(`Total: $${totalAmount.toFixed(2)}`);
+    }
+
+    main();
+
+  </script>
+
+</body>
+</html>
